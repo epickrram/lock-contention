@@ -1,0 +1,59 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+
+ext {
+    fullName = 'Lock contention'
+    fullDescription = 'Lock contention example code'
+    teamName = ''
+    siteUrl = 'https://epickrram.com'
+    sourceUrl = ''
+
+    javaCompilerExecutable = System.env['JAVA_HOME'] ? System.env['JAVA_HOME'] + '/bin/javac' : 'javac'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+        }
+    }
+
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+jar {
+    baseName = project.name
+
+    manifest.attributes('Built-By': System.properties['user.name'],
+                        'Bundle-Name': fullName,
+                        'Bundle-Vendor': teamName,
+                        'Bundle-Description': fullDescription,
+                        'Bundle-DocURL': siteUrl)
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar, javadocJar
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.2.1'
+}
+
+
