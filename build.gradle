@@ -21,6 +21,11 @@ sourceSets {
 
 }
 
+dependencies {
+    compile 'org.hdrhistogram:HdrHistogram:2.1.8'
+
+}
+
 repositories {
     mavenCentral()
 }
