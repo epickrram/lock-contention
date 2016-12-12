@@ -11,9 +11,11 @@ final class SingleSocketEchoServer
 {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final ServerSocketChannel serverSocketChannel;
+    private final int cpuAffinity;
 
-    SingleSocketEchoServer(final int port) throws IOException
+    SingleSocketEchoServer(final int port, final int cpuAffinity) throws IOException
     {
+        this.cpuAffinity = cpuAffinity;
         this.serverSocketChannel = ServerSocketChannel.open();
         this.serverSocketChannel.bind(new InetSocketAddress(port));
         this.serverSocketChannel.configureBlocking(true);
@@ -36,7 +38,7 @@ final class SingleSocketEchoServer
             try
             {
                 final SocketChannel client = serverSocketChannel.accept();
-                executorService.submit(new ClientConnectionHandler(client, client));
+                executorService.submit(new ClientConnectionHandler(client, client, cpuAffinity));
             }
             catch (IOException e)
             {

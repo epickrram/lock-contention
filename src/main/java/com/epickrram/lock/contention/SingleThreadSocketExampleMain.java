@@ -19,13 +19,13 @@ public final class SingleThreadSocketExampleMain
     {
         final ExecutorService executorService = Executors.newCachedThreadPool();
 
-        final SingleSocketEchoServer echoServer = new SingleSocketEchoServer(PORT);
+        final SingleSocketEchoServer echoServer = new SingleSocketEchoServer(PORT, 1);
         echoServer.start();
 
         final SocketChannel clientChannel = SocketChannel.open();
         clientChannel.connect(new InetSocketAddress("localhost", PORT));
 
-        final SingleThreadSenderReceiver senderReceiver = new SingleThreadSenderReceiver(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L));
+        final SingleThreadSenderReceiver senderReceiver = new SingleThreadSenderReceiver(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L), 2);
         executorService.submit(senderReceiver);
 
         senderReceiver.await();

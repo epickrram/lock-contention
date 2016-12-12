@@ -20,7 +20,7 @@ public final class DuplexSocketExampleMain
     {
         final ExecutorService executorService = Executors.newCachedThreadPool();
 
-        final DuplexSocketEchoServer echoServer = new DuplexSocketEchoServer(PORT);
+        final DuplexSocketEchoServer echoServer = new DuplexSocketEchoServer(PORT, 1);
         echoServer.start();
 
         final SocketChannel senderChannel = SocketChannel.open();
@@ -30,12 +30,12 @@ public final class DuplexSocketExampleMain
         server.bind(new InetSocketAddress(PORT + 1));
         server.configureBlocking(true);
 
-        final SocketSender socketSender = new SocketSender(senderChannel, TimeUnit.MICROSECONDS.toNanos(200L));
+        final SocketSender socketSender = new SocketSender(senderChannel, TimeUnit.MICROSECONDS.toNanos(200L), 2);
         executorService.submit(socketSender);
 
         final SocketChannel receiverChannel = server.accept();
 
-        final SocketReceiver socketReceiver = new SocketReceiver(receiverChannel);
+        final SocketReceiver socketReceiver = new SocketReceiver(receiverChannel, 3);
         executorService.submit(socketReceiver);
 
         socketReceiver.await();

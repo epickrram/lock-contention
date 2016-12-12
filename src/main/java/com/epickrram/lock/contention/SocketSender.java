@@ -13,11 +13,13 @@ public final class SocketSender implements Runnable
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(8);
     private final long sendIntervalNanos;
     private final CountDownLatch latch = new CountDownLatch(1);
+    private final int cpuAffinity;
 
-    public SocketSender(final SocketChannel socketChannel, final long sendIntervalNanos) throws IOException
+    public SocketSender(final SocketChannel socketChannel, final long sendIntervalNanos, final int cpuAffinity) throws IOException
     {
         this.socketChannel = socketChannel;
         this.sendIntervalNanos = sendIntervalNanos;
+        this.cpuAffinity = cpuAffinity;
         this.socketChannel.configureBlocking(false);
     }
 
@@ -25,6 +27,7 @@ public final class SocketSender implements Runnable
     public void run()
     {
         Thread.currentThread().setName(THREAD_NAME);
+        CpuAffinity.setAffinity(cpuAffinity);
         latch.countDown();
         while(!Thread.currentThread().isInterrupted())
         {

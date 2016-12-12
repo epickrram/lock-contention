@@ -22,8 +22,7 @@ sourceSets {
 }
 
 dependencies {
-    compile 'org.hdrhistogram:HdrHistogram:2.1.8'
-
+    compile 'org.hdrhistogram:HdrHistogram:2.1.8', 'net.openhft:affinity:3.0'
 }
 
 repositories {

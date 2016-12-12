@@ -14,12 +14,14 @@ final class SingleThreadSenderReceiver implements Runnable
     private final long sendIntervalNanos;
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(8);
     private final CountDownLatch latch = new CountDownLatch(1);
+    private final int cpuAffinity;
     private long maxInSecond = 0L;
     private long lastSecond = 0L;
 
-    SingleThreadSenderReceiver(final SocketChannel socketChannel, final long sendIntervalNanos) throws IOException
+    SingleThreadSenderReceiver(final SocketChannel socketChannel, final long sendIntervalNanos, final int cpuAffinity) throws IOException
     {
         this.socketChannel = socketChannel;
+        this.cpuAffinity = cpuAffinity;
         this.socketChannel.configureBlocking(false);
         this.sendIntervalNanos = sendIntervalNanos;
     }
@@ -28,6 +30,7 @@ final class SingleThreadSenderReceiver implements Runnable
     public void run()
     {
         Thread.currentThread().setName(THREAD_NAME);
+        CpuAffinity.setAffinity(cpuAffinity);
         latch.countDown();
         final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
         while(!Thread.currentThread().isInterrupted())

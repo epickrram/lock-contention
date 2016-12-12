@@ -7,14 +7,16 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public final class DuplexSocketEchoServer
+final class DuplexSocketEchoServer
 {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final ServerSocketChannel serverSocketChannel;
     private final int port;
+    private final int cpuAffinity;
 
-    public DuplexSocketEchoServer(final int port) throws IOException
+    DuplexSocketEchoServer(final int port, final int cpuAffinity) throws IOException
     {
+        this.cpuAffinity = cpuAffinity;
         this.serverSocketChannel = ServerSocketChannel.open();
         this.port = port;
         this.serverSocketChannel.bind(new InetSocketAddress(this.port));
@@ -41,7 +43,7 @@ public final class DuplexSocketEchoServer
                 final SocketChannel senderChannel = SocketChannel.open();
                 senderChannel.connect(new InetSocketAddress("localhost", port + 1));
                 senderChannel.configureBlocking(false);
-                executorService.submit(new ClientConnectionHandler(receiverChannel, senderChannel));
+                executorService.submit(new ClientConnectionHandler(receiverChannel, senderChannel, cpuAffinity));
             }
             catch (IOException e)
             {

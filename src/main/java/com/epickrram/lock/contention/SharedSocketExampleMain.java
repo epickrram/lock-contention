@@ -19,14 +19,14 @@ public final class SharedSocketExampleMain
     {
         final ExecutorService executorService = Executors.newCachedThreadPool();
 
-        final SingleSocketEchoServer echoServer = new SingleSocketEchoServer(PORT);
+        final SingleSocketEchoServer echoServer = new SingleSocketEchoServer(PORT, 1);
         echoServer.start();
 
         final SocketChannel clientChannel = SocketChannel.open();
         clientChannel.connect(new InetSocketAddress("localhost", PORT));
 
-        final SocketReceiver socketReceiver = new SocketReceiver(clientChannel);
-        final SocketSender socketSender = new SocketSender(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L));
+        final SocketReceiver socketReceiver = new SocketReceiver(clientChannel, 2);
+        final SocketSender socketSender = new SocketSender(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L), 3);
         executorService.submit(socketReceiver);
         executorService.submit(socketSender);
 

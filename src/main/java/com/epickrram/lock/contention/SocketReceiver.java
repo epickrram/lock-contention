@@ -12,12 +12,14 @@ final class SocketReceiver implements Runnable
     private final SocketChannel socketChannel;
     private final ByteBuffer buffer;
     private final CountDownLatch latch = new CountDownLatch(1);
+    private final int cpuAffinity;
     private long maxInSecond = 0L;
     private long lastSecond = 0L;
 
-    SocketReceiver(final SocketChannel socketChannel) throws IOException
+    SocketReceiver(final SocketChannel socketChannel, final int cpuAffinity) throws IOException
     {
         this.socketChannel = socketChannel;
+        this.cpuAffinity = cpuAffinity;
         this.buffer = ByteBuffer.allocateDirect(8);
         this.socketChannel.configureBlocking(false);
     }
@@ -27,6 +29,7 @@ final class SocketReceiver implements Runnable
     {
         Thread.currentThread().setName(THREAD_NAME);
         latch.countDown();
+        CpuAffinity.setAffinity(cpuAffinity);
         final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
         while (!Thread.currentThread().isInterrupted())
         {

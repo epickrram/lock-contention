@@ -8,12 +8,14 @@ final class ClientConnectionHandler implements Runnable
 {
     private final SocketChannel receiverChannel;
     private final SocketChannel senderChannel;
+    private final int cpuAffinity;
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(8);
 
-    ClientConnectionHandler(final SocketChannel receiverChannel, final SocketChannel senderChannel) throws IOException
+    ClientConnectionHandler(final SocketChannel receiverChannel, final SocketChannel senderChannel, final int cpuAffinity) throws IOException
     {
         this.receiverChannel = receiverChannel;
         this.senderChannel = senderChannel;
+        this.cpuAffinity = cpuAffinity;
         receiverChannel.configureBlocking(false);
         senderChannel.configureBlocking(false);
     }
@@ -22,6 +24,7 @@ final class ClientConnectionHandler implements Runnable
     public void run()
     {
         Thread.currentThread().setName("socket-connection-handler");
+        CpuAffinity.setAffinity(cpuAffinity);
         while(!Thread.currentThread().isInterrupted())
         {
             try
