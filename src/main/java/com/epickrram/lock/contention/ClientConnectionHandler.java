@@ -6,13 +6,16 @@ import java.nio.channels.SocketChannel;
 
 final class ClientConnectionHandler implements Runnable
 {
-    private final SocketChannel client;
+    private final SocketChannel receiverChannel;
+    private final SocketChannel senderChannel;
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(8);
 
-    ClientConnectionHandler(final SocketChannel client) throws IOException
+    ClientConnectionHandler(final SocketChannel receiverChannel, final SocketChannel senderChannel) throws IOException
     {
-        this.client = client;
-        client.configureBlocking(false);
+        this.receiverChannel = receiverChannel;
+        this.senderChannel = senderChannel;
+        receiverChannel.configureBlocking(false);
+        senderChannel.configureBlocking(false);
     }
 
     @Override
@@ -26,12 +29,12 @@ final class ClientConnectionHandler implements Runnable
                 buffer.clear();
                 while (buffer.remaining() != 0)
                 {
-                    client.read(buffer);
+                    receiverChannel.read(buffer);
                 }
                 buffer.flip();
                 while(buffer.remaining() != 0)
                 {
-                    client.write(buffer);
+                    senderChannel.write(buffer);
                 }
             }
             catch(IOException e)

@@ -5,13 +5,14 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-public final class SharedSocketExampleMain
+public final class DuplexSocketExampleMain
 {
     private static final int PORT = 14778;
 
@@ -19,16 +20,23 @@ public final class SharedSocketExampleMain
     {
         final ExecutorService executorService = Executors.newCachedThreadPool();
 
-        final SingleSocketEchoServer echoServer = new SingleSocketEchoServer(PORT);
+        final DuplexSocketEchoServer echoServer = new DuplexSocketEchoServer(PORT);
         echoServer.start();
 
-        final SocketChannel clientChannel = SocketChannel.open();
-        clientChannel.connect(new InetSocketAddress("localhost", PORT));
+        final SocketChannel senderChannel = SocketChannel.open();
+        senderChannel.connect(new InetSocketAddress("localhost", PORT));
 
-        final SocketReceiver socketReceiver = new SocketReceiver(clientChannel);
-        final SocketSender socketSender = new SocketSender(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L));
-        executorService.submit(socketReceiver);
+        final ServerSocketChannel server = ServerSocketChannel.open();
+        server.bind(new InetSocketAddress(PORT + 1));
+        server.configureBlocking(true);
+
+        final SocketSender socketSender = new SocketSender(senderChannel, TimeUnit.MICROSECONDS.toNanos(200L));
         executorService.submit(socketSender);
+
+        final SocketChannel receiverChannel = server.accept();
+
+        final SocketReceiver socketReceiver = new SocketReceiver(receiverChannel);
+        executorService.submit(socketReceiver);
 
         socketReceiver.await();
         socketSender.await();

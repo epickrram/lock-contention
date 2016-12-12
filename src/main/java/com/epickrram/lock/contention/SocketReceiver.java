@@ -6,7 +6,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-final class SharedSocketReceiver implements Runnable
+final class SocketReceiver implements Runnable
 {
     static final String THREAD_NAME = "shared-socket-receiver";
     private final SocketChannel socketChannel;
@@ -15,7 +15,7 @@ final class SharedSocketReceiver implements Runnable
     private long maxInSecond = 0L;
     private long lastSecond = 0L;
 
-    SharedSocketReceiver(final SocketChannel socketChannel) throws IOException
+    SocketReceiver(final SocketChannel socketChannel) throws IOException
     {
         this.socketChannel = socketChannel;
         this.buffer = ByteBuffer.allocateDirect(8);
@@ -27,6 +27,7 @@ final class SharedSocketReceiver implements Runnable
     {
         Thread.currentThread().setName(THREAD_NAME);
         latch.countDown();
+        final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
         while (!Thread.currentThread().isInterrupted())
         {
             try
@@ -38,6 +39,10 @@ final class SharedSocketReceiver implements Runnable
                 }
                 buffer.flip();
                 final long currentNanos = System.nanoTime();
+                if(currentNanos < recordingStartTimestamp)
+                {
+                    continue;
+                }
                 final long roundTripLatency = currentNanos - buffer.getLong();
                 final long currentSecond = TimeUnit.NANOSECONDS.toSeconds(currentNanos);
                 maxInSecond = Math.max(maxInSecond, roundTripLatency);

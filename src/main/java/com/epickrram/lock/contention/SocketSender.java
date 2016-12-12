@@ -6,7 +6,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
 
-public final class SharedSocketSender implements Runnable
+public final class SocketSender implements Runnable
 {
     static final String THREAD_NAME = "shared-socket-sender";
     private final SocketChannel socketChannel;
@@ -14,7 +14,7 @@ public final class SharedSocketSender implements Runnable
     private final long sendIntervalNanos;
     private final CountDownLatch latch = new CountDownLatch(1);
 
-    public SharedSocketSender(final SocketChannel socketChannel, final long sendIntervalNanos) throws IOException
+    public SocketSender(final SocketChannel socketChannel, final long sendIntervalNanos) throws IOException
     {
         this.socketChannel = socketChannel;
         this.sendIntervalNanos = sendIntervalNanos;

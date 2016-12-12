@@ -7,12 +7,12 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public final class EchoServer
+final class SingleSocketEchoServer
 {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final ServerSocketChannel serverSocketChannel;
 
-    public EchoServer(final int port) throws IOException
+    SingleSocketEchoServer(final int port) throws IOException
     {
         this.serverSocketChannel = ServerSocketChannel.open();
         this.serverSocketChannel.bind(new InetSocketAddress(port));
@@ -36,7 +36,7 @@ public final class EchoServer
             try
             {
                 final SocketChannel client = serverSocketChannel.accept();
-                executorService.submit(new ClientConnectionHandler(client));
+                executorService.submit(new ClientConnectionHandler(client, client));
             }
             catch (IOException e)
             {

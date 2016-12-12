@@ -19,7 +19,7 @@ public final class SingleThreadSocketExampleMain
     {
         final ExecutorService executorService = Executors.newCachedThreadPool();
 
-        final EchoServer echoServer = new EchoServer(PORT);
+        final SingleSocketEchoServer echoServer = new SingleSocketEchoServer(PORT);
         echoServer.start();
 
         final SocketChannel clientChannel = SocketChannel.open();

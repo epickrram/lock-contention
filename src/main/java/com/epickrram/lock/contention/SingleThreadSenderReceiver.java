@@ -29,6 +29,7 @@ final class SingleThreadSenderReceiver implements Runnable
     {
         Thread.currentThread().setName(THREAD_NAME);
         latch.countDown();
+        final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
         while(!Thread.currentThread().isInterrupted())
         {
             try
@@ -48,6 +49,10 @@ final class SingleThreadSenderReceiver implements Runnable
                 }
                 buffer.flip();
                 final long currentNanos = System.nanoTime();
+                if(currentNanos < recordingStartTimestamp)
+                {
+                    continue;
+                }
                 final long roundTripLatency = currentNanos - buffer.getLong();
                 final long currentSecond = TimeUnit.NANOSECONDS.toSeconds(currentNanos);
                 maxInSecond = Math.max(maxInSecond, roundTripLatency);
