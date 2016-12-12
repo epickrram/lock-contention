@@ -5,17 +5,18 @@ import org.HdrHistogram.Histogram;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 
 final class HistogramReporter
 {
-    private static final int HIGHEST_TRACKABLE_VALUE = 500_000;
+    private static final int HIGHEST_TRACKABLE_VALUE = 50_000;
     private final Histogram histogram = new Histogram(HIGHEST_TRACKABLE_VALUE, 4);
 
     void recordValue(final long value)
     {
-        histogram.recordValue(Math.min(HIGHEST_TRACKABLE_VALUE, value));
+        histogram.recordValue(Math.min(HIGHEST_TRACKABLE_VALUE, TimeUnit.NANOSECONDS.toMicros(value)));
     }
 
     String report(final String histogramTitle) throws IOException
