@@ -18,7 +18,7 @@ final class SocketReceiver implements Runnable
     private final HistogramReporter histogramReporter = new HistogramReporter();
     private boolean resetData = true;
 
-    //-XX:-TieredCompilation -XX:+UnlockDiagnosticVMOptions -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCTaskTimeStamps -XX:+PrintGCTimeStamps -XX:+PrintGCDetails -XX:+PrintGC -XX:+PrintSafepointStatistics -XX:PrintSafepointStatisticsCount=5 -XX:GuaranteedSafepointInterval=600000
+    //-XX:+UnlockDiagnosticVMOptions -XX:-TieredCompilation -XX:+PrintCompilation -XX:+PrintInlining -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCTaskTimeStamps -XX:+PrintGCTimeStamps -XX:+PrintGCDetails -XX:+PrintGC -XX:+PrintSafepointStatistics -XX:PrintSafepointStatisticsCount=5 -XX:GuaranteedSafepointInterval=600000
 
     SocketReceiver(final SocketChannel socketChannel, final int cpuAffinity) throws IOException
     {
