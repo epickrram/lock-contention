@@ -46,13 +46,14 @@ final class SocketReceiver implements Runnable
                 }
                 buffer.flip();
                 final long currentNanos = System.nanoTime();
+                final long roundTripLatency = currentNanos - buffer.getLong();
+                histogramReporter.recordValue(roundTripLatency);
                 if(currentNanos > recordingStartTimestamp && resetData)
                 {
+                    System.out.println("Resetting histogram");
                     histogramReporter.reset();
                     resetData = false;
                 }
-                final long roundTripLatency = currentNanos - buffer.getLong();
-                histogramReporter.recordValue(roundTripLatency);
             }
             catch(IOException e)
             {
