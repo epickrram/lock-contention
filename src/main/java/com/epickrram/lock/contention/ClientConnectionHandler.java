@@ -2,6 +2,7 @@ package com.epickrram.lock.contention;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SocketChannel;
 
 final class ClientConnectionHandler implements Runnable
@@ -42,8 +43,11 @@ final class ClientConnectionHandler implements Runnable
             }
             catch(IOException e)
             {
-                System.err.println("Caught exception while reading from client. Exiting.");
-                e.printStackTrace();
+                if(!(e instanceof ClosedByInterruptException))
+                {
+                    System.err.println("Caught exception while reading from client. Exiting.");
+                    e.printStackTrace();
+                }
             }
         }
     }

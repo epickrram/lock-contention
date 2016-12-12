@@ -47,16 +47,15 @@ public final class SingleThreadSocketExampleMain
             throw new IllegalStateException();
         }
 
-        final long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(60L);
+        final long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(Times.TRIAL_SECONDS);
         while(System.currentTimeMillis() < endTime)
         {
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1L));
-
-            ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId);
-            System.out.printf("[%s] blocked %d times for %dms%n", threadInfo.getThreadName(),
-                    threadInfo.getBlockedCount(), threadInfo.getBlockedTime());
         }
 
+        ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId);
+        System.out.printf("[%s] blocked %d times for %dms%n", threadInfo.getThreadName(),
+                threadInfo.getBlockedCount(), threadInfo.getBlockedTime());
 
         executorService.shutdownNow();
         echoServer.stop();

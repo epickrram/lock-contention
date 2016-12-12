@@ -2,6 +2,8 @@ package com.epickrram.lock.contention;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
@@ -47,8 +49,11 @@ final class DuplexSocketEchoServer
             }
             catch (IOException e)
             {
-                System.err.println("Caught exception while accepting socket. Exiting.");
-                e.printStackTrace();
+                if(!(e instanceof ClosedByInterruptException  || e instanceof ClosedChannelException))
+                {
+                    System.err.println("Caught exception while accepting socket. Exiting.");
+                    e.printStackTrace();
+                }
             }
         }
     }

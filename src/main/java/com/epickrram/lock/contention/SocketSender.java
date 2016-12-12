@@ -2,6 +2,8 @@ package com.epickrram.lock.contention;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.LockSupport;
@@ -45,8 +47,11 @@ public final class SocketSender implements Runnable
             }
             catch(IOException e)
             {
-                System.err.println("Caught exception sending to server. Exiting.");
-                e.printStackTrace();
+                if(!(e instanceof ClosedByInterruptException || e instanceof ClosedChannelException))
+                {
+                    System.err.println("Caught exception sending to server. Exiting.");
+                    e.printStackTrace();
+                }
             }
         }
     }

@@ -19,8 +19,15 @@ final class HistogramReporter
         histogram.recordValue(Math.min(HIGHEST_TRACKABLE_VALUE, TimeUnit.NANOSECONDS.toMicros(value)));
     }
 
+    void reset()
+    {
+        histogram.reset();
+    }
+
     String report(final String histogramTitle) throws IOException
     {
+        histogram.outputPercentileDistribution(System.out, 1d);
+
         final Writer writer = new StringWriter();
         writer.append(format("== %s ==%n", histogramTitle));
         writer.append(format("%-8s%20d%n", "mean", (long) histogram.getMean()));

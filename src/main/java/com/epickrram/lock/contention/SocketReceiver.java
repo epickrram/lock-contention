@@ -2,6 +2,8 @@ package com.epickrram.lock.contention;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -14,8 +16,9 @@ final class SocketReceiver implements Runnable
     private final CountDownLatch latch = new CountDownLatch(1);
     private final int cpuAffinity;
     private final HistogramReporter histogramReporter = new HistogramReporter();
-    private long maxInSecond = 0L;
-    private long lastSecond = 0L;
+    private boolean resetData = true;
+
+    //-XX:-TieredCompilation -XX:+UnlockDiagnosticVMOptions -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCTaskTimeStamps -XX:+PrintGCTimeStamps -XX:+PrintGCDetails -XX:+PrintGC -XX:+PrintSafepointStatistics -XX:PrintSafepointStatisticsCount=5 -XX:GuaranteedSafepointInterval=600000
 
     SocketReceiver(final SocketChannel socketChannel, final int cpuAffinity) throws IOException
     {
@@ -31,7 +34,7 @@ final class SocketReceiver implements Runnable
         Thread.currentThread().setName(THREAD_NAME);
         latch.countDown();
         CpuAffinity.setAffinity(cpuAffinity);
-        final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
+        final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(Times.WARMUP_SECONDS);
         while (!Thread.currentThread().isInterrupted())
         {
             try
@@ -43,29 +46,21 @@ final class SocketReceiver implements Runnable
                 }
                 buffer.flip();
                 final long currentNanos = System.nanoTime();
-                if(currentNanos < recordingStartTimestamp)
+                if(currentNanos > recordingStartTimestamp && resetData)
                 {
-                    continue;
+                    histogramReporter.reset();
+                    resetData = false;
                 }
                 final long roundTripLatency = currentNanos - buffer.getLong();
                 histogramReporter.recordValue(roundTripLatency);
-                final long currentSecond = TimeUnit.NANOSECONDS.toSeconds(currentNanos);
-                maxInSecond = Math.max(maxInSecond, roundTripLatency);
-                if(currentSecond != lastSecond)
-                {
-                    if(lastSecond != 0)
-                    {
-                        System.out.println(roundTripLatency);
-                    }
-
-                    lastSecond = currentSecond;
-                    maxInSecond = 0L;
-                }
             }
             catch(IOException e)
             {
-                System.err.println("Caught exception while receiving from server. Exiting.");
-                e.printStackTrace();
+                if(!(e instanceof ClosedByInterruptException || e instanceof ClosedChannelException))
+                {
+                    System.err.println("Caught exception while receiving from server. Exiting.");
+                    e.printStackTrace();
+                }
             }
         }
     }

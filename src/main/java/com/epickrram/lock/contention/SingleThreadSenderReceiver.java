@@ -33,7 +33,7 @@ final class SingleThreadSenderReceiver implements Runnable
         Thread.currentThread().setName(THREAD_NAME);
         CpuAffinity.setAffinity(cpuAffinity);
         latch.countDown();
-        final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(5L);
+        final long recordingStartTimestamp = System.nanoTime() + TimeUnit.SECONDS.toNanos(Times.WARMUP_SECONDS);
         while(!Thread.currentThread().isInterrupted())
         {
             try
@@ -63,11 +63,6 @@ final class SingleThreadSenderReceiver implements Runnable
                 maxInSecond = Math.max(maxInSecond, roundTripLatency);
                 if(currentSecond != lastSecond)
                 {
-                    if(lastSecond != 0)
-                    {
-                        System.out.println(roundTripLatency);
-                    }
-
                     lastSecond = currentSecond;
                     maxInSecond = 0L;
                 }
