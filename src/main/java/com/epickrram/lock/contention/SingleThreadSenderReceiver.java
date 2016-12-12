@@ -15,6 +15,7 @@ final class SingleThreadSenderReceiver implements Runnable
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(8);
     private final CountDownLatch latch = new CountDownLatch(1);
     private final int cpuAffinity;
+    private final HistogramReporter histogramReporter = new HistogramReporter();
     private long maxInSecond = 0L;
     private long lastSecond = 0L;
 
@@ -57,6 +58,7 @@ final class SingleThreadSenderReceiver implements Runnable
                     continue;
                 }
                 final long roundTripLatency = currentNanos - buffer.getLong();
+                histogramReporter.recordValue(roundTripLatency);
                 final long currentSecond = TimeUnit.NANOSECONDS.toSeconds(currentNanos);
                 maxInSecond = Math.max(maxInSecond, roundTripLatency);
                 if(currentSecond != lastSecond)
@@ -82,5 +84,10 @@ final class SingleThreadSenderReceiver implements Runnable
     void await() throws InterruptedException
     {
         latch.await();
+    }
+
+    HistogramReporter getHistogramReporter()
+    {
+        return histogramReporter;
     }
 }

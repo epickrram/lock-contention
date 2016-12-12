@@ -60,5 +60,9 @@ public final class SingleThreadSocketExampleMain
 
         executorService.shutdownNow();
         echoServer.stop();
+
+        executorService.awaitTermination(1L, TimeUnit.SECONDS);
+
+        System.out.println(senderReceiver.getHistogramReporter().report("single thread receive latency"));
     }
 }

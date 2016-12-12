@@ -13,6 +13,7 @@ final class SocketReceiver implements Runnable
     private final ByteBuffer buffer;
     private final CountDownLatch latch = new CountDownLatch(1);
     private final int cpuAffinity;
+    private final HistogramReporter histogramReporter = new HistogramReporter();
     private long maxInSecond = 0L;
     private long lastSecond = 0L;
 
@@ -47,6 +48,7 @@ final class SocketReceiver implements Runnable
                     continue;
                 }
                 final long roundTripLatency = currentNanos - buffer.getLong();
+                histogramReporter.recordValue(roundTripLatency);
                 final long currentSecond = TimeUnit.NANOSECONDS.toSeconds(currentNanos);
                 maxInSecond = Math.max(maxInSecond, roundTripLatency);
                 if(currentSecond != lastSecond)
@@ -71,5 +73,10 @@ final class SocketReceiver implements Runnable
     void await() throws InterruptedException
     {
         latch.await();
+    }
+
+    HistogramReporter getHistogramReporter()
+    {
+        return histogramReporter;
     }
 }

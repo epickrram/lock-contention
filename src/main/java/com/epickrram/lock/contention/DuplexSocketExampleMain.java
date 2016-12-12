@@ -74,5 +74,8 @@ public final class DuplexSocketExampleMain
 
         executorService.shutdownNow();
         echoServer.stop();
+        executorService.awaitTermination(1L, TimeUnit.SECONDS);
+
+        System.out.println(socketReceiver.getHistogramReporter().report("duplex receive latency"));
     }
 }

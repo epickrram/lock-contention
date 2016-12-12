@@ -66,5 +66,9 @@ public final class SharedSocketExampleMain
 
         executorService.shutdownNow();
         echoServer.stop();
+
+        executorService.awaitTermination(1L, TimeUnit.SECONDS);
+
+        System.out.println(socketReceiver.getHistogramReporter().report("shared receive latency"));
     }
 }
