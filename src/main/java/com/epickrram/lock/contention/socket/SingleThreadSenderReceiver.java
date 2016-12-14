@@ -1,4 +1,4 @@
-package com.epickrram.lock.contention;
+package com.epickrram.lock.contention.socket;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

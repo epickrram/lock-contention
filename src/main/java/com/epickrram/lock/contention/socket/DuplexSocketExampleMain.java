@@ -1,17 +1,18 @@
-package com.epickrram.lock.contention;
+package com.epickrram.lock.contention.socket;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-public final class SharedSocketExampleMain
+public final class DuplexSocketExampleMain
 {
     private static final int PORT = 14778;
 
@@ -19,16 +20,23 @@ public final class SharedSocketExampleMain
     {
         final ExecutorService executorService = Executors.newCachedThreadPool();
 
-        final SingleSocketEchoServer echoServer = new SingleSocketEchoServer(PORT, 1);
+        final DuplexSocketEchoServer echoServer = new DuplexSocketEchoServer(PORT, 1);
         echoServer.start();
 
-        final SocketChannel clientChannel = SocketChannel.open();
-        clientChannel.connect(new InetSocketAddress("localhost", PORT));
+        final SocketChannel senderChannel = SocketChannel.open();
+        senderChannel.connect(new InetSocketAddress("localhost", PORT));
 
-        final SocketReceiver socketReceiver = new SocketReceiver(clientChannel, 2);
-        final SocketSender socketSender = new SocketSender(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L), 3);
-        executorService.submit(socketReceiver);
+        final ServerSocketChannel server = ServerSocketChannel.open();
+        server.bind(new InetSocketAddress(PORT + 1));
+        server.configureBlocking(true);
+
+        final SocketSender socketSender = new SocketSender(senderChannel, TimeUnit.MICROSECONDS.toNanos(200L), 2);
         executorService.submit(socketSender);
+
+        final SocketChannel receiverChannel = server.accept();
+
+        final SocketReceiver socketReceiver = new SocketReceiver(receiverChannel, 3);
+        executorService.submit(socketReceiver);
 
         socketReceiver.await();
         socketSender.await();
@@ -65,9 +73,8 @@ public final class SharedSocketExampleMain
 
         executorService.shutdownNow();
         echoServer.stop();
-
         executorService.awaitTermination(1L, TimeUnit.SECONDS);
 
-        System.out.println(socketReceiver.getHistogramReporter().report("shared receive latency"));
+        System.out.println(socketReceiver.getHistogramReporter().report("duplex receive latency"));
     }
 }

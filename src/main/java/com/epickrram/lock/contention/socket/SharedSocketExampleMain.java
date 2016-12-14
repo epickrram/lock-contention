@@ -1,4 +1,4 @@
-package com.epickrram.lock.contention;
+package com.epickrram.lock.contention.socket;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-public final class SingleThreadSocketExampleMain
+public final class SharedSocketExampleMain
 {
     private static final int PORT = 14778;
 
@@ -25,26 +25,29 @@ public final class SingleThreadSocketExampleMain
         final SocketChannel clientChannel = SocketChannel.open();
         clientChannel.connect(new InetSocketAddress("localhost", PORT));
 
-        final SingleThreadSenderReceiver senderReceiver = new SingleThreadSenderReceiver(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L), 2);
-        executorService.submit(senderReceiver);
+        final SocketReceiver socketReceiver = new SocketReceiver(clientChannel, 2);
+        final SocketSender socketSender = new SocketSender(clientChannel, TimeUnit.MICROSECONDS.toNanos(200L), 3);
+        executorService.submit(socketReceiver);
+        executorService.submit(socketSender);
 
-        senderReceiver.await();
+        socketReceiver.await();
+        socketSender.await();
 
         final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         threadMXBean.setThreadContentionMonitoringEnabled(true);
         final ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(false, false);
-        long threadId = -1L;
+        final long[] contendingThreads = new long[2];
+        int ptr = 0;
         for (ThreadInfo threadInfo : threadInfos)
         {
-            if(threadInfo.getThreadName().equals(SingleThreadSenderReceiver.THREAD_NAME))
+            if(threadInfo.getThreadName().equals(SocketReceiver.THREAD_NAME))
             {
-                threadId = threadInfo.getThreadId();
+                contendingThreads[ptr++] = threadInfo.getThreadId();
             }
-        }
-
-        if(threadId == -1L)
-        {
-            throw new IllegalStateException();
+            else if(threadInfo.getThreadName().equals(SocketSender.THREAD_NAME))
+            {
+                contendingThreads[ptr++] = threadInfo.getThreadId();
+            }
         }
 
         final long endTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(Times.TRIAL_SECONDS);
@@ -53,7 +56,10 @@ public final class SingleThreadSocketExampleMain
             LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1L));
         }
 
-        ThreadInfo threadInfo = threadMXBean.getThreadInfo(threadId);
+        ThreadInfo threadInfo = threadMXBean.getThreadInfo(contendingThreads[0]);
+        System.out.printf("[%s] blocked %d times for %dms%n", threadInfo.getThreadName(),
+                threadInfo.getBlockedCount(), threadInfo.getBlockedTime());
+        threadInfo = threadMXBean.getThreadInfo(contendingThreads[1]);
         System.out.printf("[%s] blocked %d times for %dms%n", threadInfo.getThreadName(),
                 threadInfo.getBlockedCount(), threadInfo.getBlockedTime());
 
@@ -62,6 +68,6 @@ public final class SingleThreadSocketExampleMain
 
         executorService.awaitTermination(1L, TimeUnit.SECONDS);
 
-        System.out.println(senderReceiver.getHistogramReporter().report("single thread receive latency"));
+        System.out.println(socketReceiver.getHistogramReporter().report("shared receive latency"));
     }
 }

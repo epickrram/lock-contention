@@ -1,4 +1,4 @@
-package com.epickrram.lock.contention;
+package com.epickrram.lock.contention.socket;
 
 final class Times
 {
