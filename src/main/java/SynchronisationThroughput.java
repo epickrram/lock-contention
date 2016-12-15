@@ -30,9 +30,9 @@ public final class SynchronisationThroughput
                 lazyReaderResult.readerValue, lazyReaderResult.distinctUpdateCount, lazyReaderResult.noUpdateCount);
 
         System.out.println();
-        System.out.printf("Lazy has ~%.2f times higher throughput than atomic%n", lazyReaderResult.readerValue / (double) atomicReaderResult.readerValue);
-        System.out.printf("Lazy has ~%.2f times higher throughput than synchronized%n", lazyReaderResult.readerValue / (double) syncReaderResult.readerValue);
-        System.out.printf("Lazy has ~%.2f times higher throughput than j.u.c.Lock%n", lazyReaderResult.readerValue / (double) lockReaderResult.readerValue);
+        System.out.printf("Lazy exchanger has ~%.2f times higher throughput than atomic%n", lazyReaderResult.readerValue / (double) atomicReaderResult.readerValue);
+        System.out.printf("Lazy exchanger has ~%.2f times higher throughput than synchronized%n", lazyReaderResult.readerValue / (double) syncReaderResult.readerValue);
+        System.out.printf("Lazy exchanger has ~%.2f times higher throughput than j.u.c.Lock%n", lazyReaderResult.readerValue / (double) lockReaderResult.readerValue);
     }
 
     private static final class Result
