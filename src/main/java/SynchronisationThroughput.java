@@ -9,22 +9,50 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public final class SynchronisationThroughput
 {
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
-        final TimeUnit unit = TimeUnit.MINUTES;
-        final long sleepTime = 1L;
+        final TimeUnit unit = TimeUnit.SECONDS;
+        final long sleepTime = 15L;
 
-        final long lazyReaderValue = runExchangerThroughputTest(new LazyExchanger(), unit, sleepTime);
-        final long syncReaderValue = runExchangerThroughputTest(new SyncExchanger(), unit, sleepTime);
-        final long lockReaderValue = runExchangerThroughputTest(new LockExchanger(), unit, sleepTime);
+        final Result lazyReaderResult = runExchangerThroughputTest(new LazyExchanger(), unit, sleepTime);
+        final Result syncReaderResult = runExchangerThroughputTest(new SyncExchanger(), unit, sleepTime);
+        final Result lockReaderResult = runExchangerThroughputTest(new LockExchanger(), unit, sleepTime);
+        final Result atomicReaderResult = runExchangerThroughputTest(new AtomicExchanger(), unit, sleepTime);
 
-        System.out.printf("%n%nj.u.c.Lock: %d, synchronized: %d, async: %d%n", lockReaderValue, syncReaderValue, lazyReaderValue);
-        System.out.printf("Lazy is %.2f times faster than synchronized%n", lazyReaderValue / (double) syncReaderValue);
-        System.out.printf("Lazy is %.2f times faster than j.u.c.Lock%n", lazyReaderValue / (double) lockReaderValue);
+        System.out.println();
+        System.out.printf("j.u.c.Lock thrpt: %12d, updates: %12d, noUpdates: %12d%n",
+                lockReaderResult.readerValue, lockReaderResult.distinctUpdateCount, lockReaderResult.noUpdateCount);
+        System.out.printf("sync       thrpt: %12d, updates: %12d, noUpdates: %12d%n",
+                syncReaderResult.readerValue, syncReaderResult.distinctUpdateCount, syncReaderResult.noUpdateCount);
+        System.out.printf("atomic     thrpt: %12d, updates: %12d, noUpdates: %12d%n",
+                atomicReaderResult.readerValue, atomicReaderResult.distinctUpdateCount, atomicReaderResult.noUpdateCount);
+        System.out.printf("lazySet    thrpt: %12d, updates: %12d, noUpdates: %12d%n",
+                lazyReaderResult.readerValue, lazyReaderResult.distinctUpdateCount, lazyReaderResult.noUpdateCount);
+
+        System.out.println();
+        System.out.printf("Lazy has ~%.2f times higher throughput than atomic%n", lazyReaderResult.readerValue / (double) atomicReaderResult.readerValue);
+        System.out.printf("Lazy has ~%.2f times higher throughput than synchronized%n", lazyReaderResult.readerValue / (double) syncReaderResult.readerValue);
+        System.out.printf("Lazy has ~%.2f times higher throughput than j.u.c.Lock%n", lazyReaderResult.readerValue / (double) lockReaderResult.readerValue);
     }
 
-    private static long runExchangerThroughputTest(final Exchanger exchanger, final TimeUnit unit, final long sleepTime)
+    private static final class Result
     {
+        private final long readerValue;
+        private final long distinctUpdateCount;
+        private final long noUpdateCount;
+
+        private Result(final long readerValue, final long distinctUpdateCount, final long noUpdateCount)
+        {
+            this.readerValue = readerValue;
+            this.distinctUpdateCount = distinctUpdateCount;
+            this.noUpdateCount = noUpdateCount;
+        }
+    }
+
+    private static Result runExchangerThroughputTest(final Exchanger exchanger,
+                                                     final TimeUnit unit, final long sleepTime) throws InterruptedException
+    {
+        System.out.printf("Starting test with %s for %ds%n", exchanger.getClass().getSimpleName(), sleepTime);
         final Reader reader = new Reader(exchanger);
         final Thread rThread = new Thread(reader::run);
         rThread.start();
@@ -35,32 +63,27 @@ public final class SynchronisationThroughput
         final long[] ids = new long[] {readerThreadId, writerThreadId};
         final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         threadMXBean.setThreadContentionMonitoringEnabled(true);
-
-        final Thread monitor = new Thread(() ->
-                                         {
-                                             while(!Thread.currentThread().isInterrupted())
-                                             {
-                                                 final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(ids);
-                                                 for (ThreadInfo threadInfo : threadInfos)
-                                                 {
-                                                     System.out.printf("%n%s blocked %dms (%d), waited %dms (%d)",
-                                                                       threadInfo.getThreadId() == writerThreadId ? "writer" : "reader",
-                                                                       threadInfo.getBlockedTime(), threadInfo.getBlockedCount(),
-                                                                       threadInfo.getWaitedTime(), threadInfo.getWaitedCount());
-                                                 }
-                                                 LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(1L));
-                                             }
-                                         });
-        monitor.start();
+        threadMXBean.setThreadCpuTimeEnabled(true);
 
         LockSupport.parkNanos(unit.toNanos(sleepTime));
 
-        final long readerValue = reader.getValue();
+        final ThreadInfo[] threadInfos = threadMXBean.getThreadInfo(ids);
+        for (ThreadInfo threadInfo : threadInfos)
+        {
+            System.out.printf("%s blocked %dms (%d), waited %dms (%d)%n",
+                    threadInfo.getThreadId() == writerThreadId ? "writer" : "reader",
+                    threadInfo.getBlockedTime(), threadInfo.getBlockedCount(),
+                    threadInfo.getWaitedTime(), threadInfo.getWaitedCount());
+        }
 
         rThread.interrupt();
         wThread.interrupt();
-        monitor.interrupt();
-        return readerValue;
+        rThread.join();
+        wThread.join();
+
+        System.out.println();
+
+        return new Result(reader.getValue(), reader.getDistinctUpdateCount(), reader.getNoUpdateCount());
     }
 
     private static final class Writer
@@ -86,6 +109,8 @@ public final class SynchronisationThroughput
     {
         private final Exchanger exchanger;
         private long value;
+        private long distinctUpdateCount = 0L;
+        private long noUpdateCount = 0L;
 
         private Reader(final Exchanger exchanger)
         {
@@ -96,13 +121,32 @@ public final class SynchronisationThroughput
         {
             while(!Thread.currentThread().isInterrupted())
             {
-                value = exchanger.get();
+                final long current = exchanger.get();
+                if(current != value)
+                {
+                    distinctUpdateCount++;
+                }
+                else
+                {
+                    noUpdateCount++;
+                }
+                value = current;
             }
         }
 
-        public long getValue()
+        long getValue()
         {
             return value;
+        }
+
+        long getDistinctUpdateCount()
+        {
+            return distinctUpdateCount;
+        }
+
+        long getNoUpdateCount()
+        {
+            return noUpdateCount;
         }
     }
 
@@ -154,6 +198,23 @@ public final class SynchronisationThroughput
         public void update(final long v)
         {
             value.lazySet(v);
+        }
+
+        @Override
+        public long get()
+        {
+            return value.get();
+        }
+    }
+
+    private static final class AtomicExchanger implements Exchanger
+    {
+        private final AtomicLong value = new AtomicLong();
+
+        @Override
+        public void update(final long v)
+        {
+            value.set(v);
         }
 
         @Override
