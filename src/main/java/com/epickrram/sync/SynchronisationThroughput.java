@@ -1,3 +1,5 @@
+package com.epickrram.sync;
+
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -13,11 +15,12 @@ public final class SynchronisationThroughput
     {
         final TimeUnit unit = TimeUnit.SECONDS;
         final long sleepTime = 15L;
+        final int readerCount = 1;
 
-        final Result lazyReaderResult = runExchangerThroughputTest(new LazyExchanger(), unit, sleepTime);
-        final Result syncReaderResult = runExchangerThroughputTest(new SyncExchanger(), unit, sleepTime);
-        final Result lockReaderResult = runExchangerThroughputTest(new LockExchanger(), unit, sleepTime);
-        final Result atomicReaderResult = runExchangerThroughputTest(new AtomicExchanger(), unit, sleepTime);
+        final Result lazyReaderResult = runExchangerThroughputTest(new LazyExchanger(), unit, sleepTime, readerCount);
+        final Result syncReaderResult = runExchangerThroughputTest(new SyncExchanger(), unit, sleepTime, readerCount);
+        final Result lockReaderResult = runExchangerThroughputTest(new LockExchanger(), unit, sleepTime, readerCount);
+        final Result atomicReaderResult = runExchangerThroughputTest(new AtomicExchanger(), unit, sleepTime, readerCount);
 
         System.out.println();
         System.out.printf("j.u.c.Lock thrpt: %12d, updates: %12d, noUpdates: %12d%n",
@@ -50,7 +53,8 @@ public final class SynchronisationThroughput
     }
 
     private static Result runExchangerThroughputTest(final Exchanger exchanger,
-                                                     final TimeUnit unit, final long sleepTime) throws InterruptedException
+                                                     final TimeUnit unit, final long sleepTime,
+                                                     final int readerThreadCount) throws InterruptedException
     {
         System.out.printf("Starting test with %s for %ds%n", exchanger.getClass().getSimpleName(), sleepTime);
         final Reader reader = new Reader(exchanger);
@@ -58,6 +62,13 @@ public final class SynchronisationThroughput
         rThread.start();
         final Thread wThread = new Thread(new Writer(exchanger)::run);
         wThread.start();
+        for(int i = 0; i < readerThreadCount - 1; i++)
+        {
+            final Reader contendingReader = new Reader(exchanger);
+            final Thread r = new Thread(contendingReader::run);
+            r.setDaemon(true);
+            r.start();
+        }
         final long writerThreadId = wThread.getId();
         final long readerThreadId = rThread.getId();
         final long[] ids = new long[] {readerThreadId, writerThreadId};
