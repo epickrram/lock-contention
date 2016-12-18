@@ -1,6 +1,6 @@
 package com.epickrram.sync;
 
-public class UnprotectedState
+public final class UnprotectedState
 {
     private static final int LENGTH = 64;
     private static final int MASK = LENGTH - 1;

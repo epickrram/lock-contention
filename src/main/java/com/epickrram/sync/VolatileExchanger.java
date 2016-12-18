@@ -1,6 +1,6 @@
 package com.epickrram.sync;
 
-public class VolatileExchanger extends AbstractExchanger
+public final class VolatileExchanger extends AbstractExchanger
 {
     private volatile long value;
 
