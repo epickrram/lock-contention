@@ -33,8 +33,8 @@ public final class SynchronisationThroughput
     private static void reportTest(final String testName, final Result result)
     {
         final long totalReads = result.distinctUpdateCount + result.noUpdateCount;
-        System.out.printf("%sthrpt: %12d, updates: %12d (%2d%%), noUpdates: %12d (%2d%%)%n",
-                testName, result.readerValue,
+        System.out.printf("%sthrpt: %12d, reads: %12d, updates: %12d (%2d%%), noUpdates: %12d (%2d%%)%n",
+                testName, result.readerValue, totalReads,
                 result.distinctUpdateCount, (int) ((100 * result.distinctUpdateCount) / totalReads),
                 result.noUpdateCount, (int) ((100 * result.noUpdateCount) / totalReads));
     }
