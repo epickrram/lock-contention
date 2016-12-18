@@ -17,6 +17,7 @@ public final class SynchronisationThroughput
         final Result syncReaderResult = runExchangerThroughputTest(new SyncExchanger(), unit, sleepTime, readerCount);
         final Result lockReaderResult = runExchangerThroughputTest(new LockExchanger(), unit, sleepTime, readerCount);
         final Result atomicReaderResult = runExchangerThroughputTest(new AtomicExchanger(), unit, sleepTime, readerCount);
+        final Result volatileReaderResult = runExchangerThroughputTest(new VolatileExchanger(), unit, sleepTime, readerCount);
         final Result lazyReaderResult = runExchangerThroughputTest(new LazyExchanger(), unit, sleepTime, readerCount);
         final Result storeFenceResult = runExchangerThroughputTest(new StoreFenceExchanger(), unit, sleepTime, readerCount);
 
@@ -27,6 +28,8 @@ public final class SynchronisationThroughput
                 syncReaderResult.readerValue, syncReaderResult.distinctUpdateCount, syncReaderResult.noUpdateCount);
         System.out.printf("atomic     thrpt: %12d, updates: %12d, noUpdates: %12d%n",
                 atomicReaderResult.readerValue, atomicReaderResult.distinctUpdateCount, atomicReaderResult.noUpdateCount);
+        System.out.printf("volatile   thrpt: %12d, updates: %12d, noUpdates: %12d%n",
+                volatileReaderResult.readerValue, volatileReaderResult.distinctUpdateCount, volatileReaderResult.noUpdateCount);
         System.out.printf("lazySet    thrpt: %12d, updates: %12d, noUpdates: %12d%n",
                 lazyReaderResult.readerValue, lazyReaderResult.distinctUpdateCount, lazyReaderResult.noUpdateCount);
         System.out.printf("sfence     thrpt: %12d, updates: %12d, noUpdates: %12d%n",
@@ -97,76 +100,4 @@ public final class SynchronisationThroughput
         return new Result(reader.getValue(), reader.getDistinctUpdateCount(), reader.getNoUpdateCount());
     }
 
-    private static final class Writer
-    {
-        private final Exchanger exchanger;
-        private long value;
-
-        private Writer(final Exchanger exchanger)
-        {
-            this.exchanger = exchanger;
-        }
-
-        public void run()
-        {
-            while(!Thread.currentThread().isInterrupted())
-            {
-                exchanger.updateCounter(value++);
-            }
-        }
-    }
-
-    private static final class Reader
-    {
-        private final Exchanger exchanger;
-        private long value;
-        private long distinctUpdateCount = 0L;
-        private long noUpdateCount = 0L;
-
-        private Reader(final Exchanger exchanger)
-        {
-            this.exchanger = exchanger;
-        }
-
-        public void run()
-        {
-            while(!Thread.currentThread().isInterrupted())
-            {
-                final long current = exchanger.getCounter();
-
-                final long state = exchanger.unsafeGetValueForCounter(current);
-                if(state > current)
-                {
-                    System.err.println(
-                            String.format("Previous write for counter %d was not visible to reader!", current));
-                    return;
-                }
-
-                if(current != value)
-                {
-                    distinctUpdateCount++;
-                }
-                else
-                {
-                    noUpdateCount++;
-                }
-                value = current;
-            }
-        }
-
-        long getValue()
-        {
-            return value;
-        }
-
-        long getDistinctUpdateCount()
-        {
-            return distinctUpdateCount;
-        }
-
-        long getNoUpdateCount()
-        {
-            return noUpdateCount;
-        }
-    }
 }

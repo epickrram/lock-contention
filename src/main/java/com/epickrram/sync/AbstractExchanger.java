@@ -5,13 +5,13 @@ public abstract class AbstractExchanger implements Exchanger
     private final UnprotectedState state = new UnprotectedState();
 
     @Override
-    public long unsafeGetValueForCounter(final long v)
+    public long unprotectedGetValueForCounter(final long v)
     {
         return state.getValue(v);
     }
 
     @Override
-    public void unsafeSetValueForCounter(final long v)
+    public void unprotectedSetValueForCounter(final long v)
     {
         state.setValue(v);
     }
