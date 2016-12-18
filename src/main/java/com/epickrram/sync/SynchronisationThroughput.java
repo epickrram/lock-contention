@@ -4,10 +4,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
 
 public final class SynchronisationThroughput
 {
@@ -17,10 +14,11 @@ public final class SynchronisationThroughput
         final long sleepTime = 15L;
         final int readerCount = 1;
 
-        final Result lazyReaderResult = runExchangerThroughputTest(new LazyExchanger(), unit, sleepTime, readerCount);
         final Result syncReaderResult = runExchangerThroughputTest(new SyncExchanger(), unit, sleepTime, readerCount);
         final Result lockReaderResult = runExchangerThroughputTest(new LockExchanger(), unit, sleepTime, readerCount);
         final Result atomicReaderResult = runExchangerThroughputTest(new AtomicExchanger(), unit, sleepTime, readerCount);
+        final Result lazyReaderResult = runExchangerThroughputTest(new LazyExchanger(), unit, sleepTime, readerCount);
+        final Result storeFenceResult = runExchangerThroughputTest(new StoreFenceExchanger(), unit, sleepTime, readerCount);
 
         System.out.println();
         System.out.printf("j.u.c.Lock thrpt: %12d, updates: %12d, noUpdates: %12d%n",
@@ -31,6 +29,8 @@ public final class SynchronisationThroughput
                 atomicReaderResult.readerValue, atomicReaderResult.distinctUpdateCount, atomicReaderResult.noUpdateCount);
         System.out.printf("lazySet    thrpt: %12d, updates: %12d, noUpdates: %12d%n",
                 lazyReaderResult.readerValue, lazyReaderResult.distinctUpdateCount, lazyReaderResult.noUpdateCount);
+        System.out.printf("sfence     thrpt: %12d, updates: %12d, noUpdates: %12d%n",
+                storeFenceResult.readerValue, storeFenceResult.distinctUpdateCount, storeFenceResult.noUpdateCount);
 
         System.out.println();
         System.out.printf("Lazy exchanger has ~%.2f times higher throughput than atomic%n", lazyReaderResult.readerValue / (double) atomicReaderResult.readerValue);
@@ -111,7 +111,7 @@ public final class SynchronisationThroughput
         {
             while(!Thread.currentThread().isInterrupted())
             {
-                exchanger.update(value++);
+                exchanger.updateCounter(value++);
             }
         }
     }
@@ -132,7 +132,16 @@ public final class SynchronisationThroughput
         {
             while(!Thread.currentThread().isInterrupted())
             {
-                final long current = exchanger.get();
+                final long current = exchanger.getCounter();
+
+                final long state = exchanger.unsafeGetValueForCounter(current);
+                if(state > current)
+                {
+                    System.err.println(
+                            String.format("Previous write for counter %d was not visible to reader!", current));
+                    return;
+                }
+
                 if(current != value)
                 {
                     distinctUpdateCount++;
@@ -158,104 +167,6 @@ public final class SynchronisationThroughput
         long getNoUpdateCount()
         {
             return noUpdateCount;
-        }
-    }
-
-    interface Exchanger
-    {
-        void update(final long v);
-        long get();
-    }
-
-    private static final class LockExchanger implements Exchanger
-    {
-        private final Lock lock = new ReentrantLock();
-        private long value;
-
-        @Override
-        public void update(final long v)
-        {
-            lock.lock();
-            try
-            {
-                value = v;
-            }
-            finally
-            {
-                lock.unlock();
-            }
-        }
-
-        @Override
-        public long get()
-        {
-            lock.lock();
-            try
-            {
-                return value;
-            }
-            finally
-            {
-                lock.unlock();
-            }
-        }
-    }
-
-    private static final class LazyExchanger implements Exchanger
-    {
-        private final AtomicLong value = new AtomicLong();
-
-        @Override
-        public void update(final long v)
-        {
-            value.lazySet(v);
-        }
-
-        @Override
-        public long get()
-        {
-            return value.get();
-        }
-    }
-
-    private static final class AtomicExchanger implements Exchanger
-    {
-        private final AtomicLong value = new AtomicLong();
-
-        @Override
-        public void update(final long v)
-        {
-            value.set(v);
-        }
-
-        @Override
-        public long get()
-        {
-            return value.get();
-        }
-    }
-
-    private static final class SyncExchanger implements Exchanger
-    {
-        private final Object lock = new Object();
-        private long value;
-
-        @Override
-        public void update(final long v)
-        {
-            synchronized (lock)
-            {
-                value = v;
-            }
-        }
-
-        @Override
-        public long get()
-        {
-            synchronized (lock)
-            {
-                return value;
-            }
         }
     }
 }
