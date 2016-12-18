@@ -22,23 +22,21 @@ public final class SynchronisationThroughput
         final Result storeFenceResult = runExchangerThroughputTest(new StoreFenceExchanger(), unit, sleepTime, readerCount);
 
         System.out.println();
-        System.out.printf("j.u.c.Lock thrpt: %12d, updates: %12d, noUpdates: %12d%n",
-                lockReaderResult.readerValue, lockReaderResult.distinctUpdateCount, lockReaderResult.noUpdateCount);
-        System.out.printf("sync       thrpt: %12d, updates: %12d, noUpdates: %12d%n",
-                syncReaderResult.readerValue, syncReaderResult.distinctUpdateCount, syncReaderResult.noUpdateCount);
-        System.out.printf("atomic     thrpt: %12d, updates: %12d, noUpdates: %12d%n",
-                atomicReaderResult.readerValue, atomicReaderResult.distinctUpdateCount, atomicReaderResult.noUpdateCount);
-        System.out.printf("volatile   thrpt: %12d, updates: %12d, noUpdates: %12d%n",
-                volatileReaderResult.readerValue, volatileReaderResult.distinctUpdateCount, volatileReaderResult.noUpdateCount);
-        System.out.printf("lazySet    thrpt: %12d, updates: %12d, noUpdates: %12d%n",
-                lazyReaderResult.readerValue, lazyReaderResult.distinctUpdateCount, lazyReaderResult.noUpdateCount);
-        System.out.printf("sfence     thrpt: %12d, updates: %12d, noUpdates: %12d%n",
-                storeFenceResult.readerValue, storeFenceResult.distinctUpdateCount, storeFenceResult.noUpdateCount);
+        reportTest("j.u.c.Lock   ", lockReaderResult);
+        reportTest("sync         ", syncReaderResult);
+        reportTest("volatile     ", volatileReaderResult);
+        reportTest("atomic       ", atomicReaderResult);
+        reportTest("lazySet      ", lazyReaderResult);
+        reportTest("sfence       ", storeFenceResult);
+    }
 
-        System.out.println();
-        System.out.printf("Lazy exchanger has ~%.2f times higher throughput than atomic%n", lazyReaderResult.readerValue / (double) atomicReaderResult.readerValue);
-        System.out.printf("Lazy exchanger has ~%.2f times higher throughput than synchronized%n", lazyReaderResult.readerValue / (double) syncReaderResult.readerValue);
-        System.out.printf("Lazy exchanger has ~%.2f times higher throughput than j.u.c.Lock%n", lazyReaderResult.readerValue / (double) lockReaderResult.readerValue);
+    private static void reportTest(final String testName, final Result result)
+    {
+        final long totalReads = result.distinctUpdateCount + result.noUpdateCount;
+        System.out.printf("%sthrpt: %12d, updates: %12d (%2d%%), noUpdates: %12d (%2d%%)%n",
+                testName, result.readerValue,
+                result.distinctUpdateCount, (int) ((100 * result.distinctUpdateCount) / totalReads),
+                result.noUpdateCount, (int) ((100 * result.noUpdateCount) / totalReads));
     }
 
     private static final class Result
