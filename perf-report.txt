@@ -1,0 +1,56 @@
+LazyExchanger
+
++  100.00%    99.79%  java     perf-5388.map       [.] Lcom/epickrram/sync/Writer;::run
++  100.00%     0.00%  java     perf-5388.map       [.] Interpreter
++  100.00%     0.00%  java     perf-5388.map       [.] call_stub
++  100.00%     0.00%  java     libjvm.so           [.] JavaCalls::call_helper
++  100.00%     0.00%  java     libjvm.so           [.] JavaCalls::call_virtual
++  100.00%     0.00%  java     libjvm.so           [.] JavaCalls::call_virtual
++  100.00%     0.00%  java     libjvm.so           [.] thread_entry
++  100.00%     0.00%  java     libjvm.so           [.] JavaThread::thread_main_inner
++  100.00%     0.00%  java     libjvm.so           [.] JavaThread::run
++  100.00%     0.00%  java     libjvm.so           [.] java_start
++  100.00%     0.00%  java     libpthread-2.24.so  [.] start_thread
+
+
+
+LockExchanger
+
+-   74.34%    39.48%  java     perf-4184.map       [.] Lcom/epickrram/sync/Writer;::run                                                              ▒
+   + 39.48% start_thread                                                                                                                             ▒
+   - 34.86% Lcom/epickrram/sync/Writer;::run                                                                                                         ▒
+      - 22.10% Ljava/util/concurrent/locks/AbstractQueuedSynchronizer;::acquire                                                                      ▒
+         - 13.30% Lsun/misc/Unsafe;::park                                                                                                            ▒
+            - 11.65% Unsafe_Park                                                                                                                     ▒
+               - 3.50% pthread_cond_wait@@GLIBC_2.3.2                                                                                                ▒
+                  - 1.89% entry_SYSCALL_64_fastpath                                                                                                  ▒
+                     - 1.70% sys_futex                                                                                                               ▒
+                        + 1.68% do_futex                                                                                                             ▒
+               - 2.74% Parker::park                                                                                                                  ▒
+                    0.70% JavaThread::handle_special_suspend_equivalent_condition                                                                    ▒
+                 0.65% __lll_unlock_wake                                                                                                             ▒
+                 0.51% __pthread_mutex_cond_lock                                                                                                     ▒
+      - 7.49% Ljava/util/concurrent/locks/AbstractQueuedSynchronizer;::unparkSuccessor                                                               ▒
+         - 6.36% Lsun/misc/Unsafe;::unpark                                                                                                           ▒
+            - 4.64% Unsafe_Unpark                                                                                                                    ▒
+               - 1.62% pthread_cond_signal@@GLIBC_2.3.2                                                                                              ▒
+                  - 0.88% entry_SYSCALL_64_fastpath                                                                                                  ▒
+                     - 0.69% sys_futex                                                                                                               ▒
+                          0.62% do_futex                                                                                                             ▒
+                 1.46% pthread_mutex_lock                                                                                                            ▒
+              0.65% pthread_mutex_unlock                                                                                                             ▒
+      + 2.51% pthread_cond_wait@@GLIBC_2.3.2                                                                                                         ▒
+      + 1.88% pthread_cond_signal@@GLIBC_2.3.2                                                                                                       ▒
+
+
+
+
+Benchmark                       (exchangerType)  Mode  Cnt    Score     Error  Units
+SyncThroughputBenchmark.update           ATOMIC  avgt   10   41.290 ±   6.486  ns/op
+SyncThroughputBenchmark.update             LOCK  avgt   10  270.408 ±  27.875  ns/op
+SyncThroughputBenchmark.update             SYNC  avgt   10  637.703 ± 375.781  ns/op
+SyncThroughputBenchmark.update             LAZY  avgt   10   12.553 ±   2.952  ns/op
+SyncThroughputBenchmark.update         VOLATILE  avgt   10   38.192 ±   7.071  ns/op
+SyncThroughputBenchmark.update            FENCE  avgt   10   14.491 ±   2.592  ns/op
+
+

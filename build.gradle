@@ -1,3 +1,41 @@
+buildscript {
+    repositories {
+        maven{url 'http://jcenter.bintray.com'}
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
+    }
+}
+
+apply plugin: 'me.champeau.gradle.jmh'
+
+repositories {
+    mavenCentral()
+    maven{url 'http://jcenter.bintray.com'}
+}
+
+dependencies {
+    compile 'org.openjdk.jmh:jmh-core:1.17.2'
+    jmh 'org.openjdk.jmh:jmh-core:1.17.2'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.17.2'
+    compile 'org.openjdk.jol:jol-core:0.6'
+    compile 'org.openjdk.jol:jol-cli:0.6'
+
+}
+
+jmh {
+    jmhVersion = '1.17'
+    duplicateClassesStrategy = 'warn'
+    fork = 1
+    benchmarkMode = ['avgt']
+    timeUnit = 'ns'
+    warmupIterations = 5
+    iterations = 5
+}
+
 apply plugin: 'java'
 apply plugin: 'idea'
 
@@ -23,10 +61,6 @@ sourceSets {
 
 dependencies {
     compile 'org.hdrhistogram:HdrHistogram:2.1.8', 'net.openhft:affinity:3.0'
-}
-
-repositories {
-    mavenCentral()
 }
 
 sourceCompatibility = 1.8
